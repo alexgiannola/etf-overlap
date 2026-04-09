@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETF Overlap Analyzer — Avtonoma</title>
+<meta name="description" content="Analizza la sovrapposizione tra i principali ETF europei e globali. Strumento gratuito di Avtonoma.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #232a55;
+    --navy-deep: #161c3e;
+    --navy-mid: #2d3566;
+    --magenta: #d33a9b;
+    --magenta-light: #e55fb2;
+    --violet:  #2d5be4;
+    --violet-light: #4d78f5;
+    --white:   #ffffff;
+    --off-white: #f7f6f2;
+    --text-primary: #1a1f3a;
+    --text-secondary: #5a6082;
+    --text-muted: #8a90b0;
+    --border: rgba(35,42,85,0.12);
+    --border-strong: rgba(35,42,85,0.22);
+    --surface: #ffffff;
+    --surface-alt: #f4f3ef;
+    --surface-dark: #eeedf0;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 18px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy-deep);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+  }
+.header-cta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    background: var(--magenta);
+    padding: 7px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .header-cta:hover { background: var(--magenta-light); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--navy-deep);
+    padding: 3.5rem 2rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 500px; height: 300px;
+    background: radial-gradient(ellipse, rgba(45,91,228,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 20px; left: 50%;
+    transform: translateX(-50%) translateX(120px);
+    width: 300px; height: 200px;
+    background: radial-gradient(ellipse, rgba(211,58,155,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--magenta-light);
+    background: rgba(211,58,155,0.1);
+    border: 1px solid rgba(211,58,155,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.9rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--violet-light), var(--magenta-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── MAIN CARD ── */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(35,42,85,0.06);
+  }
+
+  .card-section {
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-section:last-child { border-bottom: none; }
+
+  /* ── SELECTORS ── */
+  .selectors {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .sel-wrap label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .sel-wrap select {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--surface-alt);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6082' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .sel-wrap select:focus {
+    outline: none;
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(45,91,228,0.1);
+  }
+
+  .vs-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--navy-deep);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 50%;
+    letter-spacing: 0.05em;
+    margin-top: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── METRICS ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .metric {
+    background: var(--surface);
+    padding: 1.4rem 1.75rem;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .metric-value.blue  { color: var(--violet); }
+  .metric-value.pink  { color: var(--magenta); }
+  .metric-value.navy  { color: var(--navy); }
+
+  /* ── VENN ── */
+  .venn-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 2rem;
+    background: var(--surface-alt);
+  }
+
+  /* ── TABLE SECTION ── */
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .filter-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { background: var(--surface-alt); }
+  .filter-btn.active {
+    background: var(--navy-deep);
+    color: var(--white);
+    border-color: var(--navy-deep);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    max-height: 360px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+
+  thead th {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    text-align: left;
+  }
+
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(35,42,85,0.025); }
+
+  .col-ticker { width: 13%; }
+  .col-nome   { width: 32%; }
+  .col-wa     { width: 19%; }
+  .col-wb     { width: 19%; }
+  .col-tipo   { width: 17%; }
+
+  .ticker-code {
+    font-family: 'DM Mono', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: 0.02em;
+  }
+
+  .holding-name { color: var(--text-secondary); font-size: 12px; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .badge-shared  { background: #ede9fe; color: #5b21b6; }
+  .badge-only-a  { background: #dbeafe; color: #1e40af; }
+  .badge-only-b  { background: #fce7f3; color: #9d174d; }
+
+  .weight-bar {
+    height: 5px;
+    border-radius: 3px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 5px;
+    opacity: 0.7;
+  }
+
+  .no-data {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+    font-size: 13px;
+  }
+
+  /* ── INSIGHT ── */
+  .insight-box {
+    background: linear-gradient(135deg, rgba(35,42,85,0.04) 0%, rgba(45,91,228,0.04) 100%);
+    border: 1px solid rgba(45,91,228,0.15);
+    border-left: 4px solid var(--violet);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+  }
+
+  /* ── FOOTER ── */
+  .footer-note {
+    margin-top: 2rem;
+    padding: 1.25rem 1.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .footer-note strong { color: var(--text-secondary); }
+
+  .cta-block {
+    margin-top: 1.5rem;
+    background: var(--navy-deep);
+    border-radius: var(--radius-lg);
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .cta-block h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .cta-block p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+  .cta-block a {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--white);
+    background: var(--magenta);
+    padding: 11px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .cta-block a:hover { background: var(--magenta-light); transform: translateY(-1px); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .selectors { grid-template-columns: 1fr; }
+    .vs-pill { display: none; }
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+    .metric { padding: 0.75rem 0.75rem; }
+    .metric-label { font-size: 10px; }
+    .metric-value { font-size: 1.3rem; }
+    .card-section { padding: 1rem 1rem; }
+    .cta-block { flex-direction: column; padding: 1.5rem 1.25rem; }
+    .col-ticker { width: 18%; }
+    .col-nome { width: 30%; }
+    .col-wa { width: 18%; }
+    .col-wb { width: 18%; }
+    .col-tipo { width: 16%; }
+    .badge { font-size: 9px; padding: 2px 4px; }
+    .hero { padding: 2rem 1.25rem 2rem; }
+    .hero h1 { font-size: 1.6rem; }
+    .container { padding: 1.25rem 1rem 3rem; }
+    .table-header { flex-direction: column; align-items: flex-start; }
+    .filter-row { gap: 4px; }
+    .filter-btn { font-size: 11px; padding: 3px 9px; }
+    .venn-section { padding: 1rem; }
+    .footer-note { font-size: 11px; }
+    thead th { font-size: 10px; padding: 8px 6px; }
+    tbody td { padding: 7px 6px; font-size: 12px; }
+    .ticker-code { font-size: 10px; }
+    .holding-name { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="https://avtonoma.com/prenota" class="header-cta" target="_blank" rel="noopener">Prenota una call gratuita →</a>
+</header>
+
+<div class="hero">
+  <div class="hero-badge">
+    <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#d33a9b"/></svg>
+    Strumento gratuito
+  </div>
+  <h1>ETF <span>Overlap</span> Analyzer</h1>
+  <p>Scopri quanto si sovrappongono i tuoi ETF. Evita la falsa diversificazione e ottimizza il tuo portafoglio.</p>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <!-- SELECTORS -->
+    <div class="card-section">
+      <div class="selectors">
+        <div class="sel-wrap">
+          <label>ETF A</label>
+          <select id="sel-a" onchange="update()"></select>
+        </div>
+        <div class="vs-pill">VS</div>
+        <div class="sel-wrap">
+          <label>ETF B</label>
+          <select id="sel-b" onchange="update()"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Overlap score</div>
+        <div class="metric-value blue" id="m-score">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Holdings comuni</div>
+        <div class="metric-value navy" id="m-count">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Overlap per peso</div>
+        <div class="metric-value pink" id="m-weight">—</div>
+      </div>
+    </div>
+
+    <!-- VENN -->
+    <div class="venn-section">
+      <svg id="venn" width="100%" viewBox="0 0 480 170" style="max-width:480px"></svg>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card-section">
+      <div class="table-header">
+        <span class="section-label">Holdings breakdown</span>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="setFilter('all',this)">Tutti</button>
+          <button class="filter-btn" onclick="setFilter('shared',this)">In comune</button>
+          <button class="filter-btn" onclick="setFilter('onlyA',this)">Solo A</button>
+          <button class="filter-btn" onclick="setFilter('onlyB',this)">Solo B</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-ticker">Ticker</th>
+              <th class="col-nome">Nome</th>
+              <th class="col-wa" id="th-a">ETF A</th>
+              <th class="col-wb" id="th-b">ETF B</th>
+              <th class="col-tipo">Tipo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INSIGHT -->
+    <div class="card-section">
+      <div class="table-header" style="margin-bottom:12px">
+        <span class="section-label">Analisi</span>
+      </div>
+      <div class="insight-box" id="insight">Seleziona due ETF per vedere l'analisi.</div>
+    </div>
+
+  </div><!-- /.card -->
+
+  <!-- DISCLAIMER -->
+  <div class="footer-note">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:2px"><circle cx="8" cy="8" r="7" stroke="#8a90b0" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="#8a90b0" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <span><strong>Nota:</strong> I pesi degli holdings sono indicativi e basati su dati rappresentativi aggiornati a inizio 2025. Per decisioni di investimento, verifica sempre i dati aggiornati sui siti ufficiali degli emittenti o su justETF.com. Questo strumento ha scopo puramente educativo e informativo.</span>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-block">
+    <div>
+      <h3>Vuoi un portafoglio davvero diversificato?</h3>
+      <p>Prenota una call gratuita con un consulente indipendente Avtonoma.</p>
+    </div>
+    <a href="https://avtonoma.com/prenota" target="_blank" rel="noopener">Prenota ora →</a>
+  </div>
+
+</div><!-- /.container -->
+
+<script>
+const ETFs = {
+  "VWCE": { name:"Vanguard FTSE All-World UCITS ETF", cat:"Azionario Globale", h:{"AAPL":{n:"Apple",w:4.1},"MSFT":{n:"Microsoft",w:3.8},"NVDA":{n:"NVIDIA",w:3.2},"AMZN":{n:"Amazon",w:2.3},"GOOGL":{n:"Alphabet A",w:1.9},"META":{n:"Meta",w:1.5},"TSLA":{n:"Tesla",w:1.0},"BRK.B":{n:"Berkshire B",w:0.9},"LLY":{n:"Eli Lilly",w:0.8},"JPM":{n:"JPMorgan",w:0.7},"ASML":{n:"ASML",w:0.7},"NOVO":{n:"Novo Nordisk",w:0.6},"TSM":{n:"TSMC",w:0.9},"SAM":{n:"Samsung",w:0.8},"V":{n:"Visa",w:0.6},"UNH":{n:"UnitedHealth",w:0.5},"XOM":{n:"Exxon",w:0.4},"MA":{n:"Mastercard",w:0.5},"NESTLE":{n:"Nestlé",w:0.5},"ROG":{n:"Roche",w:0.4}}},
+  "SWDA": { name:"iShares Core MSCI World UCITS ETF", cat:"Azionario Sviluppato", h:{"AAPL":{n:"Apple",w:4.8},"MSFT":{n:"Microsoft",w:4.3},"NVDA":{n:"NVIDIA",w:3.7},"AMZN":{n:"Amazon",w:2.6},"GOOGL":{n:"Alphabet A",w:2.2},"META":{n:"Meta",w:1.7},"TSLA":{n:"Tesla",w:1.1},"BRK.B":{n:"Berkshire B",w:1.0},"LLY":{n:"Eli Lilly",w:0.9},"JPM":{n:"JPMorgan",w:0.8},"ASML":{n:"ASML",w:0.8},"NOVO":{n:"Novo Nordisk",w:0.7},"V":{n:"Visa",w:0.6},"UNH":{n:"UnitedHealth",w:0.5},"MA":{n:"Mastercard",w:0.6},"NESTLE":{n:"Nestlé",w:0.6},"ROG":{n:"Roche",w:0.5},"XOM":{n:"Exxon",w:0.5},"COST":{n:"Costco",w:0.5},"AVGO":{n:"Broadcom",w:0.7}}},
+  "IWDA": { name:"iShares MSCI World UCITS ETF (Acc)", cat:"Azionario Sviluppato", h:{"AAPL":{n:"Apple",w:4.7},"MSFT":{n:"Microsoft",w:4.2},"NVDA":{n:"NVIDIA",w:3.6},"AMZN":{n:"Amazon",w:2.5},"GOOGL":{n:"Alphabet A",w:2.1},"META":{n:"Meta",w:1.7},"TSLA":{n:"Tesla",w:1.1},"BRK.B":{n:"Berkshire B",w:1.0},"LLY":{n:"Eli Lilly",w:0.9},"JPM":{n:"JPMorgan",w:0.8},"ASML":{n:"ASML",w:0.8},"NOVO":{n:"Novo Nordisk",w:0.7},"V":{n:"Visa",w:0.6},"UNH":{n:"UnitedHealth",w:0.5},"MA":{n:"Mastercard",w:0.6},"AVGO":{n:"Broadcom",w:0.7},"XOM":{n:"Exxon",w:0.5}}},
+  "HMWO": { name:"HSBC MSCI World UCITS ETF", cat:"Azionario Sviluppato", h:{"AAPL":{n:"Apple",w:4.6},"MSFT":{n:"Microsoft",w:4.1},"NVDA":{n:"NVIDIA",w:3.5},"AMZN":{n:"Amazon",w:2.4},"GOOGL":{n:"Alphabet A",w:2.0},"META":{n:"Meta",w:1.6},"TSLA":{n:"Tesla",w:1.0},"BRK.B":{n:"Berkshire B",w:0.9},"LLY":{n:"Eli Lilly",w:0.8},"JPM":{n:"JPMorgan",w:0.7},"V":{n:"Visa",w:0.6},"AVGO":{n:"Broadcom",w:0.6},"NESTLE":{n:"Nestlé",w:0.5},"ASML":{n:"ASML",w:0.7},"MA":{n:"Mastercard",w:0.5}}},
+  "WEBG": { name:"Amundi MSCI World UCITS ETF (Acc)", cat:"Azionario Sviluppato", h:{"AAPL":{n:"Apple",w:4.5},"MSFT":{n:"Microsoft",w:4.0},"NVDA":{n:"NVIDIA",w:3.4},"AMZN":{n:"Amazon",w:2.4},"GOOGL":{n:"Alphabet A",w:2.0},"META":{n:"Meta",w:1.6},"TSLA":{n:"Tesla",w:1.0},"BRK.B":{n:"Berkshire B",w:0.9},"LLY":{n:"Eli Lilly",w:0.8},"JPM":{n:"JPMorgan",w:0.7},"ASML":{n:"ASML",w:0.7},"V":{n:"Visa",w:0.6},"NOVO":{n:"Novo Nordisk",w:0.6},"COST":{n:"Costco",w:0.5},"MA":{n:"Mastercard",w:0.5}}},
+  "FWRG": { name:"Fidelity MSCI World Index UCITS ETF", cat:"Azionario Sviluppato", h:{"AAPL":{n:"Apple",w:4.6},"MSFT":{n:"Microsoft",w:4.1},"NVDA":{n:"NVIDIA",w:3.5},"AMZN":{n:"Amazon",w:2.5},"GOOGL":{n:"Alphabet A",w:2.0},"META":{n:"Meta",w:1.6},"TSLA":{n:"Tesla",w:1.0},"BRK.B":{n:"Berkshire B",w:0.9},"LLY":{n:"Eli Lilly",w:0.8},"JPM":{n:"JPMorgan",w:0.8},"V":{n:"Visa",w:0.6},"AVGO":{n:"Broadcom",w:0.6},"ASML":{n:"ASML",w:0.7},"NESTLE":{n:"Nestlé",w:0.5},"ROG":{n:"Roche",w:0.4}}},
+  "CSPX": { name:"iShares Core S&P 500 UCITS ETF", cat:"S&P 500", h:{"AAPL":{n:"Apple",w:7.2},"MSFT":{n:"Microsoft",w:6.8},"NVDA":{n:"NVIDIA",w:6.0},"AMZN":{n:"Amazon",w:4.1},"GOOGL":{n:"Alphabet A",w:3.4},"META":{n:"Meta",w:3.0},"TSLA":{n:"Tesla",w:1.9},"BRK.B":{n:"Berkshire B",w:1.7},"LLY":{n:"Eli Lilly",w:1.6},"JPM":{n:"JPMorgan",w:1.5},"V":{n:"Visa",w:1.0},"UNH":{n:"UnitedHealth",w:1.0},"MA":{n:"Mastercard",w:0.8},"XOM":{n:"Exxon",w:0.7},"AVGO":{n:"Broadcom",w:1.1},"COST":{n:"Costco",w:0.7},"NFLX":{n:"Netflix",w:0.7},"AMD":{n:"AMD",w:0.5}}},
+  "SXR8":  { name:"iShares S&P 500 EUR Hedged UCITS ETF", cat:"S&P 500", h:{"AAPL":{n:"Apple",w:7.1},"MSFT":{n:"Microsoft",w:6.7},"NVDA":{n:"NVIDIA",w:5.9},"AMZN":{n:"Amazon",w:4.0},"GOOGL":{n:"Alphabet A",w:3.3},"META":{n:"Meta",w:2.9},"TSLA":{n:"Tesla",w:1.9},"BRK.B":{n:"Berkshire B",w:1.7},"LLY":{n:"Eli Lilly",w:1.5},"JPM":{n:"JPMorgan",w:1.4},"AVGO":{n:"Broadcom",w:1.0},"V":{n:"Visa",w:0.9},"COST":{n:"Costco",w:0.7},"XOM":{n:"Exxon",w:0.7},"MA":{n:"Mastercard",w:0.8}}},
+  "VUAA": { name:"Vanguard S&P 500 UCITS ETF (Acc)", cat:"S&P 500", h:{"AAPL":{n:"Apple",w:7.3},"MSFT":{n:"Microsoft",w:6.9},"NVDA":{n:"NVIDIA",w:6.1},"AMZN":{n:"Amazon",w:4.2},"GOOGL":{n:"Alphabet A",w:3.5},"META":{n:"Meta",w:3.1},"TSLA":{n:"Tesla",w:2.0},"BRK.B":{n:"Berkshire B",w:1.8},"LLY":{n:"Eli Lilly",w:1.6},"JPM":{n:"JPMorgan",w:1.5},"AVGO":{n:"Broadcom",w:1.1},"V":{n:"Visa",w:1.0},"COST":{n:"Costco",w:0.8},"XOM":{n:"Exxon",w:0.7},"UNH":{n:"UnitedHealth",w:1.0}}},
+  "SPY5":  { name:"SPDR S&P 500 UCITS ETF", cat:"S&P 500", h:{"AAPL":{n:"Apple",w:7.0},"MSFT":{n:"Microsoft",w:6.6},"NVDA":{n:"NVIDIA",w:5.8},"AMZN":{n:"Amazon",w:4.0},"GOOGL":{n:"Alphabet A",w:3.3},"META":{n:"Meta",w:2.9},"TSLA":{n:"Tesla",w:1.8},"BRK.B":{n:"Berkshire B",w:1.6},"LLY":{n:"Eli Lilly",w:1.5},"JPM":{n:"JPMorgan",w:1.5},"AVGO":{n:"Broadcom",w:1.0},"V":{n:"Visa",w:0.9},"XOM":{n:"Exxon",w:0.7},"MA":{n:"Mastercard",w:0.8},"NFLX":{n:"Netflix",w:0.6}}},
+  "IUSE":  { name:"iShares MSCI USA UCITS ETF", cat:"S&P 500", h:{"AAPL":{n:"Apple",w:7.0},"MSFT":{n:"Microsoft",w:6.5},"NVDA":{n:"NVIDIA",w:5.8},"AMZN":{n:"Amazon",w:4.0},"GOOGL":{n:"Alphabet A",w:3.3},"META":{n:"Meta",w:2.9},"TSLA":{n:"Tesla",w:1.8},"BRK.B":{n:"Berkshire B",w:1.6},"LLY":{n:"Eli Lilly",w:1.5},"JPM":{n:"JPMorgan",w:1.4},"V":{n:"Visa",w:0.9},"MA":{n:"Mastercard",w:0.7},"COST":{n:"Costco",w:0.6},"AMD":{n:"AMD",w:0.4},"AVGO":{n:"Broadcom",w:0.8}}},
+  "EXXT":  { name:"iShares NASDAQ-100 UCITS ETF", cat:"NASDAQ / Tech", h:{"AAPL":{n:"Apple",w:9.0},"MSFT":{n:"Microsoft",w:8.5},"NVDA":{n:"NVIDIA",w:8.0},"AMZN":{n:"Amazon",w:5.1},"GOOGL":{n:"Alphabet A",w:4.5},"META":{n:"Meta",w:3.8},"TSLA":{n:"Tesla",w:2.4},"AVGO":{n:"Broadcom",w:2.1},"COST":{n:"Costco",w:1.3},"NFLX":{n:"Netflix",w:1.2},"ADBE":{n:"Adobe",w:0.9},"INTC":{n:"Intel",w:0.6},"AMD":{n:"AMD",w:1.0},"QCOM":{n:"Qualcomm",w:0.9},"PYPL":{n:"PayPal",w:0.5}}},
+  "CNDX":  { name:"iShares NASDAQ 100 UCITS ETF (Acc)", cat:"NASDAQ / Tech", h:{"AAPL":{n:"Apple",w:9.2},"MSFT":{n:"Microsoft",w:8.6},"NVDA":{n:"NVIDIA",w:8.1},"AMZN":{n:"Amazon",w:5.2},"GOOGL":{n:"Alphabet A",w:4.6},"META":{n:"Meta",w:3.9},"TSLA":{n:"Tesla",w:2.5},"AVGO":{n:"Broadcom",w:2.2},"COST":{n:"Costco",w:1.4},"NFLX":{n:"Netflix",w:1.2},"AMD":{n:"AMD",w:1.0},"QCOM":{n:"Qualcomm",w:0.9},"ADBE":{n:"Adobe",w:0.9},"INTC":{n:"Intel",w:0.5},"PYPL":{n:"PayPal",w:0.5}}},
+  "EQQQ":  { name:"Invesco EQQQ NASDAQ-100 UCITS ETF", cat:"NASDAQ / Tech", h:{"AAPL":{n:"Apple",w:9.1},"MSFT":{n:"Microsoft",w:8.5},"NVDA":{n:"NVIDIA",w:8.0},"AMZN":{n:"Amazon",w:5.0},"GOOGL":{n:"Alphabet A",w:4.5},"META":{n:"Meta",w:3.8},"TSLA":{n:"Tesla",w:2.4},"AVGO":{n:"Broadcom",w:2.1},"COST":{n:"Costco",w:1.3},"NFLX":{n:"Netflix",w:1.2},"AMD":{n:"AMD",w:1.0},"ADBE":{n:"Adobe",w:0.9},"QCOM":{n:"Qualcomm",w:0.9},"INTC":{n:"Intel",w:0.6},"MU":{n:"Micron",w:0.5}}},
+  "QDVE":  { name:"iShares S&P 500 Info Tech UCITS ETF", cat:"NASDAQ / Tech", h:{"AAPL":{n:"Apple",w:18.5},"MSFT":{n:"Microsoft",w:17.2},"NVDA":{n:"NVIDIA",w:14.5},"AVGO":{n:"Broadcom",w:4.2},"AMD":{n:"AMD",w:2.5},"ORCL":{n:"Oracle",w:2.2},"ADBE":{n:"Adobe",w:1.9},"INTC":{n:"Intel",w:1.4},"QCOM":{n:"Qualcomm",w:1.8},"AMAT":{n:"Applied Materials",w:1.3},"LRCX":{n:"Lam Research",w:1.0},"MU":{n:"Micron",w:0.9}}},
+  "ISPA":  { name:"iShares Core EURO STOXX 50 UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:9.0},"NOVO":{n:"Novo Nordisk",w:6.5},"SAP":{n:"SAP",w:5.5},"LVMH":{n:"LVMH",w:4.2},"SIEMENS":{n:"Siemens",w:4.0},"TOTAL":{n:"TotalEnergies",w:3.8},"SNY":{n:"Sanofi",w:3.5},"ABI":{n:"AB InBev",w:2.8},"AIRBUS":{n:"Airbus",w:2.5},"BNP":{n:"BNP Paribas",w:2.2},"ENI":{n:"ENI",w:2.0},"ENEL":{n:"Enel",w:1.8},"ING":{n:"ING Group",w:1.6},"AXA":{n:"AXA",w:1.5},"SAN":{n:"Santander",w:1.4}}},
+  "MEUD":  { name:"Amundi MSCI Europe UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:5.5},"NOVO":{n:"Novo Nordisk",w:5.0},"NESTLE":{n:"Nestlé",w:4.0},"ROG":{n:"Roche",w:3.0},"SAP":{n:"SAP",w:3.5},"NOVNVF":{n:"Novartis",w:2.5},"LVMH":{n:"LVMH",w:2.8},"SIEMENS":{n:"Siemens",w:2.6},"TOTAL":{n:"TotalEnergies",w:2.3},"SNY":{n:"Sanofi",w:2.0},"ABI":{n:"AB InBev",w:1.6},"AIRBUS":{n:"Airbus",w:1.8},"ENI":{n:"ENI",w:1.3},"ENEL":{n:"Enel",w:1.2},"AXA":{n:"AXA",w:1.4},"ING":{n:"ING Group",w:1.2},"BNP":{n:"BNP Paribas",w:1.5}}},
+  "VFEA":  { name:"Vanguard FTSE Developed Europe UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:6.0},"NOVO":{n:"Novo Nordisk",w:5.5},"NESTLE":{n:"Nestlé",w:4.0},"ROG":{n:"Roche",w:3.0},"SAP":{n:"SAP",w:3.5},"NOVNVF":{n:"Novartis",w:2.5},"LVMH":{n:"LVMH",w:2.8},"SIEMENS":{n:"Siemens",w:2.6},"TOTAL":{n:"TotalEnergies",w:2.3},"SNY":{n:"Sanofi",w:2.0},"AIRBUS":{n:"Airbus",w:1.8},"ABI":{n:"AB InBev",w:1.6},"ENI":{n:"ENI",w:1.0},"ENEL":{n:"Enel",w:1.0},"AXA":{n:"AXA",w:1.3},"ING":{n:"ING Group",w:1.1},"BNP":{n:"BNP Paribas",w:1.3}}},
+  "IMEU":  { name:"iShares Core MSCI Europe UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:5.8},"NOVO":{n:"Novo Nordisk",w:5.2},"NESTLE":{n:"Nestlé",w:3.8},"ROG":{n:"Roche",w:2.9},"SAP":{n:"SAP",w:3.3},"NOVNVF":{n:"Novartis",w:2.4},"LVMH":{n:"LVMH",w:2.7},"SIEMENS":{n:"Siemens",w:2.5},"TOTAL":{n:"TotalEnergies",w:2.2},"SNY":{n:"Sanofi",w:2.0},"ABI":{n:"AB InBev",w:1.6},"AIRBUS":{n:"Airbus",w:1.7},"AXA":{n:"AXA",w:1.4},"BNP":{n:"BNP Paribas",w:1.4},"ING":{n:"ING Group",w:1.1}}},
+  "EXW1":  { name:"iShares STOXX Europe 600 UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:4.5},"NOVO":{n:"Novo Nordisk",w:4.2},"NESTLE":{n:"Nestlé",w:3.5},"ROG":{n:"Roche",w:2.8},"SAP":{n:"SAP",w:3.0},"NOVNVF":{n:"Novartis",w:2.3},"LVMH":{n:"LVMH",w:2.5},"SIEMENS":{n:"Siemens",w:2.3},"TOTAL":{n:"TotalEnergies",w:2.0},"SNY":{n:"Sanofi",w:1.9},"AIRBUS":{n:"Airbus",w:1.7},"ABI":{n:"AB InBev",w:1.5},"AXA":{n:"AXA",w:1.3},"ING":{n:"ING Group",w:1.1},"BNP":{n:"BNP Paribas",w:1.3},"ENI":{n:"ENI",w:0.9},"ENEL":{n:"Enel",w:0.9},"UCG":{n:"UniCredit",w:0.8}}},
+  "SMEA":  { name:"iShares MSCI EMU UCITS ETF", cat:"Europa", h:{"ASML":{n:"ASML",w:10.5},"SAP":{n:"SAP",w:7.2},"SIEMENS":{n:"Siemens",w:5.8},"LVMH":{n:"LVMH",w:5.2},"TOTAL":{n:"TotalEnergies",w:4.9},"SNY":{n:"Sanofi",w:4.5},"ABI":{n:"AB InBev",w:3.8},"AIRBUS":{n:"Airbus",w:3.5},"AXA":{n:"AXA",w:3.2},"BNP":{n:"BNP Paribas",w:3.0},"ENI":{n:"ENI",w:2.5},"ENEL":{n:"Enel",w:2.3},"ING":{n:"ING Group",w:2.2},"UCG":{n:"UniCredit",w:1.8},"SAN":{n:"Santander",w:1.7}}},
+  "EIMI":  { name:"iShares Core MSCI EM IMI UCITS ETF", cat:"Mercati Emergenti", h:{"TSM":{n:"TSMC",w:7.2},"SAM":{n:"Samsung",w:4.0},"TCEHY":{n:"Tencent",w:3.5},"BABA":{n:"Alibaba",w:2.1},"RELIANCE":{n:"Reliance Ind.",w:1.8},"INFY":{n:"Infosys",w:1.2},"PDD":{n:"PDD Holdings",w:1.1},"MEITUAN":{n:"Meituan",w:0.9},"ICICIBANK":{n:"ICICI Bank",w:0.8},"VALE":{n:"Vale",w:0.7},"HDFCBANK":{n:"HDFC Bank",w:0.7},"JD":{n:"JD.com",w:0.6},"BIDU":{n:"Baidu",w:0.5}}},
+  "IEMA":  { name:"iShares MSCI Emerging Markets UCITS ETF", cat:"Mercati Emergenti", h:{"TSM":{n:"TSMC",w:6.8},"SAM":{n:"Samsung",w:3.8},"TCEHY":{n:"Tencent",w:3.2},"BABA":{n:"Alibaba",w:2.0},"RELIANCE":{n:"Reliance Ind.",w:1.7},"INFY":{n:"Infosys",w:1.1},"PDD":{n:"PDD Holdings",w:1.0},"VALE":{n:"Vale",w:0.8},"ICICIBANK":{n:"ICICI Bank",w:0.7},"MEITUAN":{n:"Meituan",w:0.8},"HDFCBANK":{n:"HDFC Bank",w:0.7}}},
+  "VFEM":  { name:"Vanguard FTSE Emerging Markets UCITS ETF", cat:"Mercati Emergenti", h:{"TSM":{n:"TSMC",w:7.0},"SAM":{n:"Samsung",w:3.9},"TCEHY":{n:"Tencent",w:3.3},"BABA":{n:"Alibaba",w:2.1},"RELIANCE":{n:"Reliance Ind.",w:1.8},"INFY":{n:"Infosys",w:1.2},"PDD":{n:"PDD Holdings",w:1.1},"VALE":{n:"Vale",w:0.8},"ICICIBANK":{n:"ICICI Bank",w:0.8},"MEITUAN":{n:"Meituan",w:0.8},"HDFCBANK":{n:"HDFC Bank",w:0.7},"JD":{n:"JD.com",w:0.6}}},
+  "AEEM":  { name:"Amundi MSCI Emerging Markets UCITS ETF", cat:"Mercati Emergenti", h:{"TSM":{n:"TSMC",w:6.9},"SAM":{n:"Samsung",w:3.8},"TCEHY":{n:"Tencent",w:3.2},"BABA":{n:"Alibaba",w:2.0},"RELIANCE":{n:"Reliance Ind.",w:1.7},"INFY":{n:"Infosys",w:1.1},"VALE":{n:"Vale",w:0.8},"PDD":{n:"PDD Holdings",w:1.0},"ICICIBANK":{n:"ICICI Bank",w:0.7},"JD":{n:"JD.com",w:0.6},"HDFCBANK":{n:"HDFC Bank",w:0.7}}},
+  "IAEX":  { name:"iShares Core MSCI Japan IMI UCITS ETF", cat:"Asia-Pacifico", h:{"TM":{n:"Toyota",w:4.2},"SONY":{n:"Sony Group",w:3.2},"8306":{n:"Mitsubishi UFJ",w:2.8},"6861":{n:"Keyence",w:2.5},"8035":{n:"Tokyo Electron",w:2.2},"6902":{n:"Denso",w:1.7},"9984":{n:"SoftBank Group",w:3.4},"7741":{n:"Hoya",w:2.0},"4519":{n:"Chugai Pharma",w:1.8}}},
+  "CPXJ":  { name:"iShares Core MSCI Pacific ex-Japan UCITS ETF", cat:"Asia-Pacifico", h:{"BHP":{n:"BHP Group",w:8.5},"CBA":{n:"Commonwealth Bank",w:7.2},"CSL":{n:"CSL Ltd",w:5.8},"RIO":{n:"Rio Tinto",w:4.5},"ANZ":{n:"ANZ Bank",w:3.8},"NAB":{n:"NAB",w:3.5},"WES":{n:"Wesfarmers",w:2.8},"MQG":{n:"Macquarie Group",w:2.5},"WBC":{n:"Westpac",w:2.8}}},
+  "WSML":  { name:"iShares MSCI World Small Cap UCITS ETF", cat:"Small Cap", h:{"AXON":{n:"Axon Enterprise",w:0.4},"CASY":{n:"Casey's General",w:0.3},"FIX":{n:"Comfort Systems",w:0.3},"ELF":{n:"e.l.f. Beauty",w:0.2},"SKX":{n:"Skechers",w:0.2},"MTSI":{n:"MACOM Tech",w:0.2},"ITCI":{n:"Intra-Cellular",w:0.2},"HIMS":{n:"Hims & Hers",w:0.2},"PCVX":{n:"Vaxcyte",w:0.2}}},
+  "IUS3":  { name:"iShares S&P SmallCap 600 UCITS ETF", cat:"Small Cap", h:{"AXON":{n:"Axon Enterprise",w:0.6},"CASY":{n:"Casey's General",w:0.5},"FIX":{n:"Comfort Systems",w:0.5},"SKX":{n:"Skechers",w:0.4},"HIMS":{n:"Hims & Hers",w:0.3},"MTSI":{n:"MACOM Tech",w:0.3},"ELF":{n:"e.l.f. Beauty",w:0.3},"ITCI":{n:"Intra-Cellular",w:0.3},"PCVX":{n:"Vaxcyte",w:0.2}}},
+  "IUHC":  { name:"iShares S&P 500 Health Care UCITS ETF", cat:"Settoriale – Healthcare", h:{"LLY":{n:"Eli Lilly",w:10.5},"UNH":{n:"UnitedHealth",w:8.8},"JNJ":{n:"J&J",w:7.5},"ABBV":{n:"AbbVie",w:6.2},"MRK":{n:"Merck",w:5.8},"TMO":{n:"Thermo Fisher",w:4.5},"DHR":{n:"Danaher",w:3.8},"ABT":{n:"Abbott",w:3.5},"CVS":{n:"CVS Health",w:2.8},"AMGN":{n:"Amgen",w:3.2},"GILD":{n:"Gilead",w:2.5},"REGN":{n:"Regeneron",w:2.2}}},
+  "INRG":  { name:"iShares Global Clean Energy UCITS ETF", cat:"Settoriale – Clean Energy", h:{"ENPH":{n:"Enphase Energy",w:8.5},"FSLR":{n:"First Solar",w:7.8},"CEG":{n:"Constellation Energy",w:7.2},"ORSTED":{n:"Ørsted",w:6.5},"RWE":{n:"RWE AG",w:5.8},"ENEL":{n:"Enel",w:5.0},"IBDRY":{n:"Iberdrola",w:4.8},"VWS":{n:"Vestas Wind",w:4.2},"BEP":{n:"Brookfield Ren.",w:3.8},"PLUG":{n:"Plug Power",w:2.5}}},
+  "IQQH":  { name:"iShares Global Water UCITS ETF", cat:"Settoriale – Acqua", h:{"XYLEM":{n:"Xylem",w:7.5},"AWK":{n:"American Water Works",w:7.0},"WTRG":{n:"Essential Utilities",w:5.5},"GFL":{n:"GFL Environmental",w:4.5},"PNR":{n:"Pentair",w:4.0},"ROPER":{n:"Roper Technologies",w:3.8},"WMS":{n:"Advanced Drainage",w:3.5},"ARIS":{n:"Aris Water",w:2.8},"AWR":{n:"American States Water",w:2.5}}},
+  "SGLD":  { name:"Invesco Physical Gold ETC", cat:"Commodities – Oro", h:{"GOLD_PHYS":{n:"Oro fisico",w:100.0}}},
+  "PHAU":  { name:"WisdomTree Physical Gold ETC", cat:"Commodities – Oro", h:{"GOLD_PHYS":{n:"Oro fisico",w:100.0}}},
+  "GLTR":  { name:"Aberdeen Physical Precious Metals ETC", cat:"Commodities – Metalli", h:{"GOLD_PHYS":{n:"Oro fisico",w:57.0},"SILVER_PHYS":{n:"Argento fisico",w:25.0},"PLAT_PHYS":{n:"Platino fisico",w:12.0},"PALL_PHYS":{n:"Palladio fisico",w:6.0}}},
+  "CMOD":  { name:"iShares Diversified Commodity Swap UCITS ETF", cat:"Commodities – Diversificato", h:{"CRUDE_OIL":{n:"Petrolio greggio",w:22.0},"NAT_GAS":{n:"Gas naturale",w:12.0},"GOLD_PHYS":{n:"Oro",w:14.0},"SILVER_PHYS":{n:"Argento",w:4.0},"COPPER":{n:"Rame",w:8.0},"CORN":{n:"Mais",w:6.0},"WHEAT":{n:"Grano",w:5.0},"SOYBEAN":{n:"Soia",w:5.0}}},
+  "AGGH":  { name:"iShares Core Global Aggregate Bond UCITS ETF", cat:"Obbligazionario Globale", h:{"US10Y":{n:"US Treasury 10Y",w:8.5},"US5Y":{n:"US Treasury 5Y",w:6.2},"DE10Y":{n:"Bund Germania 10Y",w:4.8},"JP10Y":{n:"JGB Giappone 10Y",w:4.5},"UK10Y":{n:"Gilt UK 10Y",w:2.8},"FR10Y":{n:"OAT Francia 10Y",w:2.5},"CORP_A":{n:"Corporate AAA",w:3.2},"CORP_B":{n:"Corporate AA",w:2.9},"IT10Y":{n:"BTP Italia 10Y",w:2.0},"ES10Y":{n:"Bonos Spagna 10Y",w:1.8}}},
+  "VAGF":  { name:"Vanguard Global Aggregate Bond UCITS ETF", cat:"Obbligazionario Globale", h:{"US10Y":{n:"US Treasury 10Y",w:8.0},"US5Y":{n:"US Treasury 5Y",w:6.0},"DE10Y":{n:"Bund Germania 10Y",w:4.5},"JP10Y":{n:"JGB Giappone 10Y",w:4.2},"UK10Y":{n:"Gilt UK 10Y",w:2.5},"FR10Y":{n:"OAT Francia 10Y",w:2.3},"CORP_A":{n:"Corporate AAA",w:3.0},"CORP_B":{n:"Corporate AA",w:2.7},"IT10Y":{n:"BTP Italia 10Y",w:1.8},"ES10Y":{n:"Bonos Spagna 10Y",w:1.5}}},
+  "IBTS":  { name:"iShares $ Treasury Bond 1-3yr UCITS ETF", cat:"Obbligazionario – Treasury", h:{"US1Y":{n:"US Treasury 1Y",w:18.0},"US2Y":{n:"US Treasury 2Y",w:22.0},"US3Y":{n:"US Treasury 3Y",w:20.0},"US18M":{n:"US Treasury 18M",w:15.0},"TBILL":{n:"T-Bill 6M",w:12.0}}},
+  "DTLA":  { name:"iShares $ Treasury Bond 20+yr UCITS ETF", cat:"Obbligazionario – Treasury", h:{"US20Y":{n:"US Treasury 20Y",w:20.0},"US25Y":{n:"US Treasury 25Y",w:18.0},"US30Y":{n:"US Treasury 30Y",w:25.0},"US22Y":{n:"US Treasury 22Y",w:15.0},"US28Y":{n:"US Treasury 28Y",w:12.0}}},
+  "CRPS":  { name:"iShares Core € Corp Bond UCITS ETF", cat:"Obbligazionario – Corporate", h:{"VOLKSWAGEN":{n:"VW Bond 2028",w:1.2},"TOTAL_BOND":{n:"Total Bond 2027",w:1.1},"BNP_BOND":{n:"BNP Bond 2029",w:1.0},"ENI_BOND":{n:"ENI Bond 2026",w:0.9},"SIEMENS_BOND":{n:"Siemens Bond 2027",w:0.9},"ENEL_BOND":{n:"Enel Bond 2028",w:0.8},"SAP_BOND":{n:"SAP Bond 2025",w:0.8},"AXA_BOND":{n:"AXA Bond 2030",w:0.7},"LVMH_BOND":{n:"LVMH Bond 2026",w:0.7}}},
+  "XGVD":  { name:"Xtrackers Global Govt Bond UCITS ETF", cat:"Obbligazionario Globale", h:{"US10Y":{n:"US Treasury 10Y",w:10.0},"US5Y":{n:"US Treasury 5Y",w:7.5},"JP10Y":{n:"JGB Giappone 10Y",w:6.5},"DE10Y":{n:"Bund Germania 10Y",w:5.5},"UK10Y":{n:"Gilt UK 10Y",w:3.2},"FR10Y":{n:"OAT Francia 10Y",w:3.0},"IT10Y":{n:"BTP Italia 10Y",w:2.5},"ES10Y":{n:"Bonos Spagna 10Y",w:2.2}}},
+  "IEGE":  { name:"iShares € Govt Bond 7-10yr UCITS ETF", cat:"Obbligazionario – Europa", h:{"DE10Y":{n:"Bund Germania 10Y",w:22.0},"FR10Y":{n:"OAT Francia 10Y",w:18.5},"IT10Y":{n:"BTP Italia 10Y",w:14.0},"ES10Y":{n:"Bonos Spagna 10Y",w:11.5},"NLGOV":{n:"Olanda Governi",w:7.5},"BELGOV":{n:"Belgio Governi",w:6.0},"AUTGOV":{n:"Austria Governi",w:4.5},"FINGOV":{n:"Finlandia Governi",w:3.5}}},
+  "BTPI":  { name:"iShares € Inflation Linked Govt Bond UCITS ETF", cat:"Obbligazionario – Inflation", h:{"IT_LINKER":{n:"BTP indicizzato",w:20.0},"FR_LINKER":{n:"OATi Francia",w:22.0},"DE_LINKER":{n:"Bund indicizzato",w:18.0},"ES_LINKER":{n:"Bonos indicizzato",w:12.0},"UK_LINKER":{n:"Gilt indicizzato",w:8.0}}},
+  "HYG":   { name:"iShares € High Yield Corp Bond UCITS ETF", cat:"Obbligazionario – High Yield", h:{"HY_AUTO":{n:"HY Auto Sector",w:8.5},"HY_ENERGY":{n:"HY Energy",w:7.8},"HY_TELECOM":{n:"HY Telecom",w:7.2},"HY_RETAIL":{n:"HY Retail",w:6.5},"HY_TECH":{n:"HY Technology",w:6.0},"HY_MEDIA":{n:"HY Media",w:5.5},"HY_HEALTH":{n:"HY Healthcare",w:4.8}}},
+  "DJRE":  { name:"SPDR Dow Jones Global Real Estate UCITS ETF", cat:"Real Estate", h:{"PLD":{n:"Prologis",w:7.5},"AMT":{n:"American Tower",w:5.8},"EQIX":{n:"Equinix",w:5.2},"PSA":{n:"Public Storage",w:4.1},"WELL":{n:"Welltower",w:3.8},"SPG":{n:"Simon Property",w:3.5},"DLR":{n:"Digital Realty",w:3.0},"O":{n:"Realty Income",w:2.8},"VTR":{n:"Ventas",w:2.0},"EXR":{n:"Extra Space",w:1.8}}},
+  "IPRP":  { name:"iShares European Property Yield UCITS ETF", cat:"Real Estate", h:{"SGRO":{n:"Segro",w:8.5},"VONV":{n:"Vonovia",w:7.2},"UNIB":{n:"Unibail-Rodamco",w:6.8},"LEG":{n:"LEG Immobilien",w:5.5},"ARG":{n:"Aroundtown",w:4.2},"COVV":{n:"Covivio",w:3.8},"ICAD":{n:"Icade",w:3.5}}},
+  "IWMO":  { name:"iShares Edge MSCI World Momentum UCITS ETF", cat:"Factor – Momentum", h:{"AAPL":{n:"Apple",w:6.5},"MSFT":{n:"Microsoft",w:6.0},"NVDA":{n:"NVIDIA",w:9.5},"META":{n:"Meta",w:4.2},"AMZN":{n:"Amazon",w:3.8},"AVGO":{n:"Broadcom",w:3.5},"LLY":{n:"Eli Lilly",w:3.2},"NOVO":{n:"Novo Nordisk",w:2.8},"JPM":{n:"JPMorgan",w:2.5},"NFLX":{n:"Netflix",w:2.2},"SAP":{n:"SAP",w:2.0}}},
+  "IWVL":  { name:"iShares Edge MSCI World Value UCITS ETF", cat:"Factor – Value", h:{"BRK.B":{n:"Berkshire B",w:3.8},"JPM":{n:"JPMorgan",w:3.5},"XOM":{n:"Exxon",w:3.2},"JNJ":{n:"J&J",w:3.0},"BAC":{n:"Bank of America",w:2.8},"CVX":{n:"Chevron",w:2.5},"WFC":{n:"Wells Fargo",w:2.3},"ABBV":{n:"AbbVie",w:2.2},"MS":{n:"Morgan Stanley",w:2.0},"BNP":{n:"BNP Paribas",w:1.8},"TOTAL":{n:"TotalEnergies",w:1.7},"ENI":{n:"ENI",w:1.2}}},
+  "IWQU":  { name:"iShares Edge MSCI World Quality UCITS ETF", cat:"Factor – Quality", h:{"AAPL":{n:"Apple",w:7.8},"MSFT":{n:"Microsoft",w:8.2},"NVDA":{n:"NVIDIA",w:5.5},"META":{n:"Meta",w:4.0},"GOOGL":{n:"Alphabet A",w:4.5},"LLY":{n:"Eli Lilly",w:3.5},"ASML":{n:"ASML",w:3.2},"NOVO":{n:"Novo Nordisk",w:3.0},"MA":{n:"Mastercard",w:2.8},"V":{n:"Visa",w:2.5},"COST":{n:"Costco",w:2.2},"AVGO":{n:"Broadcom",w:2.0}}},
+  "IGWD":  { name:"iShares Edge MSCI World Min Vol UCITS ETF", cat:"Factor – Low Volatility", h:{"JNJ":{n:"J&J",w:2.5},"PEP":{n:"PepsiCo",w:2.4},"KO":{n:"Coca-Cola",w:2.3},"WMT":{n:"Walmart",w:2.2},"MCD":{n:"McDonald's",w:2.1},"NESTLE":{n:"Nestlé",w:2.0},"NOVNVF":{n:"Novartis",w:1.9},"PG":{n:"P&G",w:2.0},"T":{n:"AT&T",w:1.8},"VZ":{n:"Verizon",w:1.7},"ABT":{n:"Abbott",w:1.6},"ROG":{n:"Roche",w:1.5}}},
+  "VHYL":  { name:"Vanguard FTSE All-World High Dividend Yield UCITS ETF", cat:"Dividendi", h:{"BRK.B":{n:"Berkshire B",w:2.8},"JPM":{n:"JPMorgan",w:2.5},"XOM":{n:"Exxon",w:2.3},"JNJ":{n:"J&J",w:2.2},"NESTLE":{n:"Nestlé",w:2.0},"TOTAL":{n:"TotalEnergies",w:1.9},"ABBV":{n:"AbbVie",w:1.8},"CVX":{n:"Chevron",w:1.7},"ENI":{n:"ENI",w:1.2},"NOVO":{n:"Novo Nordisk",w:1.5},"ROG":{n:"Roche",w:1.4},"BNP":{n:"BNP Paribas",w:1.3},"ENEL":{n:"Enel",w:1.2},"AXA":{n:"AXA",w:1.1},"SAM":{n:"Samsung",w:1.0}}},
+  "SDIV":  { name:"SPDR S&P Global Dividend Aristocrats UCITS ETF", cat:"Dividendi", h:{"JNJ":{n:"J&J",w:2.5},"KO":{n:"Coca-Cola",w:2.4},"PEP":{n:"PepsiCo",w:2.3},"PG":{n:"P&G",w:2.2},"WMT":{n:"Walmart",w:2.1},"XOM":{n:"Exxon",w:2.0},"CVX":{n:"Chevron",w:1.9},"ABBV":{n:"AbbVie",w:1.8},"NESTLE":{n:"Nestlé",w:1.7},"ENI":{n:"ENI",w:1.4},"ENEL":{n:"Enel",w:1.3},"AXA":{n:"AXA",w:1.2},"TOTAL":{n:"TotalEnergies",w:1.6},"BNP":{n:"BNP Paribas",w:1.2}}},
+  "IDVY":  { name:"iShares EURO STOXX Select Dividend 30 UCITS ETF", cat:"Dividendi", h:{"ENEL":{n:"Enel",w:6.5},"TOTAL":{n:"TotalEnergies",w:6.2},"ENI":{n:"ENI",w:5.8},"AXA":{n:"AXA",w:5.5},"BNP":{n:"BNP Paribas",w:5.2},"ING":{n:"ING Group",w:5.0},"SIEMENS":{n:"Siemens",w:4.8},"ABI":{n:"AB InBev",w:4.5},"UCG":{n:"UniCredit",w:4.2},"SAN":{n:"Santander",w:3.8}}},
+  "SUSW":  { name:"iShares MSCI World ESG Screened UCITS ETF", cat:"ESG", h:{"MSFT":{n:"Microsoft",w:4.5},"AAPL":{n:"Apple",w:4.2},"NVDA":{n:"NVIDIA",w:3.8},"AMZN":{n:"Amazon",w:2.8},"GOOGL":{n:"Alphabet A",w:2.3},"META":{n:"Meta",w:1.8},"ASML":{n:"ASML",w:1.0},"LLY":{n:"Eli Lilly",w:1.0},"V":{n:"Visa",w:0.8},"MA":{n:"Mastercard",w:0.7},"NOVO":{n:"Novo Nordisk",w:0.8},"NESTLE":{n:"Nestlé",w:0.7}}},
+  "SUWS":  { name:"UBS MSCI World Socially Responsible UCITS ETF", cat:"ESG", h:{"MSFT":{n:"Microsoft",w:5.0},"AAPL":{n:"Apple",w:4.8},"NVDA":{n:"NVIDIA",w:4.0},"AMZN":{n:"Amazon",w:3.0},"GOOGL":{n:"Alphabet A",w:2.5},"ASML":{n:"ASML",w:1.5},"LLY":{n:"Eli Lilly",w:1.2},"V":{n:"Visa",w:1.0},"MA":{n:"Mastercard",w:0.9},"NOVO":{n:"Novo Nordisk",w:1.0},"NESTLE":{n:"Nestlé",w:0.8}}}
+};
+
+let currentFilter = 'all';
+let lastData = null;
+
+function populateSelects() {
+  const groups = {};
+  Object.entries(ETFs).forEach(([k,v]) => {
+    if (!groups[v.cat]) groups[v.cat] = [];
+    groups[v.cat].push(k);
+  });
+  ['sel-a','sel-b'].forEach((id, idx) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    Object.entries(groups).forEach(([cat, keys]) => {
+      const og = document.createElement('optgroup');
+      og.label = cat;
+      keys.forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = k + ' – ' + ETFs[k].name;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    });
+    sel.value = idx === 0 ? 'VWCE' : 'SWDA';
+  });
+}
+
+function computeOverlap(a, b) {
+  const ha = ETFs[a].h, hb = ETFs[b].h;
+  const shared = [], onlyA = [], onlyB = [];
+  const all = new Set([...Object.keys(ha),...Object.keys(hb)]);
+  all.forEach(t => {
+    if (ha[t] && hb[t]) shared.push(t);
+    else if (ha[t]) onlyA.push(t);
+    else onlyB.push(t);
+  });
+  const totalA = Object.values(ha).reduce((s,v)=>s+v.w,0);
+  const totalB = Object.values(hb).reduce((s,v)=>s+v.w,0);
+  let overlapW = 0;
+  shared.forEach(t => overlapW += Math.min(ha[t].w, hb[t].w));
+  const overlapPct = overlapW / Math.max(totalA, totalB) * 100;
+  const overlapScore = (shared.length / Math.max(Object.keys(ha).length, Object.keys(hb).length)) * 100;
+  return { shared, onlyA, onlyB, overlapScore, overlapPct };
+}
+
+function drawVenn(score, a, b) {
+  const svg = document.getElementById('venn');
+  const pct = Math.min(score/100, 0.92);
+  const r = 68, center = 240, maxD = r*2, minD = r*0.22;
+  const dist = maxD - (maxD-minD)*pct;
+  const cx1 = center - dist/2, cx2 = center + dist/2, cy = 85;
+  svg.innerHTML = `
+    <defs>
+      <clipPath id="cA"><circle cx="${cx1}" cy="${cy}" r="${r}"/></clipPath>
+      <clipPath id="cB"><circle cx="${cx2}" cy="${cy}" r="${r}"/></clipPath>
+    </defs>
+    <circle cx="${cx1}" cy="${cy}" r="${r}" fill="rgba(45,91,228,0.18)" stroke="#2d5be4" stroke-width="1.5"/>
+    <circle cx="${cx2}" cy="${cy}" r="${r}" fill="rgba(211,58,155,0.18)" stroke="#d33a9b" stroke-width="1.5"/>
+    <circle cx="${cx1}" cy="${cy}" r="${r}" fill="rgba(100,60,190,0.35)" clip-path="url(#cB)"/>
+    <text x="${Math.max(cx1-dist*0.38,28)}" y="${cy+5}" text-anchor="middle" font-size="13" font-family="'DM Sans',sans-serif" font-weight="500" fill="#2d5be4">${a}</text>
+    <text x="${Math.min(cx2+dist*0.38,452)}" y="${cy+5}" text-anchor="middle" font-size="13" font-family="'DM Sans',sans-serif" font-weight="500" fill="#d33a9b">${b}</text>
+    <text x="${center}" y="${cy-4}" text-anchor="middle" font-size="20" font-weight="700" font-family="'Syne',sans-serif" fill="#1a1f3a">${score.toFixed(0)}%</text>
+    <text x="${center}" y="${cy+14}" text-anchor="middle" font-size="10" font-family="'DM Sans',sans-serif" fill="#8a90b0" letter-spacing="0.06em">OVERLAP</text>`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (lastData) renderTable(lastData.a, lastData.b, lastData.data);
+}
+
+function renderTable(a, b, data) {
+  const ha = ETFs[a].h, hb = ETFs[b].h;
+  let rows = [
+    ...data.shared.map(t=>({t,type:'shared'})),
+    ...data.onlyA.map(t=>({t,type:'onlyA'})),
+    ...data.onlyB.map(t=>({t,type:'onlyB'}))
+  ].filter(r => currentFilter==='all' || r.type===currentFilter)
+   .sort((x,y)=>(hb[y.t]?.w||0)+(ha[y.t]?.w||0)-(hb[x.t]?.w||0)-(ha[x.t]?.w||0));
+  const maxW = Math.max(...rows.map(r=>Math.max(ha[r.t]?.w||0,hb[r.t]?.w||0)),1);
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  if (rows.length===0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="no-data">Nessun holding in questa categoria</td></tr>`;
+    return;
+  }
+  rows.forEach(({t,type}) => {
+    const h = ha[t]||hb[t];
+    const wA = ha[t]?.w, wB = hb[t]?.w;
+    const badge = type==='shared'
+      ? `<span class="badge badge-shared">Comune</span>`
+      : type==='onlyA'
+      ? `<span class="badge badge-only-a">Solo ${a}</span>`
+      : `<span class="badge badge-only-b">Solo ${b}</span>`;
+    const barA = wA ? `${wA.toFixed(1)}%<span class="weight-bar" style="width:${Math.round(wA/maxW*44)}px;background:#2d5be4"></span>` : `<span style="color:#b0b4c8">—</span>`;
+    const barB = wB ? `${wB.toFixed(1)}%<span class="weight-bar" style="width:${Math.round(wB/maxW*44)}px;background:#d33a9b"></span>` : `<span style="color:#b0b4c8">—</span>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="ticker-code">${t}</span></td><td><span class="holding-name">${h.n}</span></td><td style="font-size:12px">${barA}</td><td style="font-size:12px">${barB}</td><td>${badge}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildInsight(a, b, data) {
+  const nA = ETFs[a].name, nB = ETFs[b].name;
+  const catA = ETFs[a].cat, catB = ETFs[b].cat;
+  const s = data.overlapScore, w = data.overlapPct;
+  let msg, advice;
+  if (s > 70) {
+    msg = `un <strong>overlap molto elevato</strong> (${s.toFixed(0)}% degli holdings, ${w.toFixed(1)}% per peso). Tenerli entrambi aggiunge poca diversificazione reale`;
+    advice = `Probabilmente stai pagando due TER per esposizioni quasi identiche. Valuta di scegliere quello con il TER più basso o di sostituire uno con un ETF su una asset class diversa.`;
+  } else if (s > 35) {
+    msg = `un <strong>overlap moderato</strong> (${s.toFixed(0)}% degli holdings, ${w.toFixed(1)}% per peso). C'è sovrapposizione ma anche esposizione differenziata`;
+    advice = catA===catB
+      ? `Entrambi appartengono alla categoria <em>${catA}</em>: verifica se la differenza di indice giustifica tenerli entrambi.`
+      : `La combinazione <em>${catA} + ${catB}</em> porta diversificazione reale, ma monitora il peso degli holdings condivisi — spesso concentrano i rischi nelle mega-cap.`;
+  } else {
+    msg = `un <strong>overlap basso</strong> (${s.toFixed(0)}% degli holdings, ${w.toFixed(1)}% per peso). Le esposizioni sono prevalentemente distinte`;
+    advice = catA!==catB
+      ? `La combinazione <em>${catA} + ${catB}</em> offre diversificazione genuina per asset class. Assicurati che i pesi in portafoglio riflettano la tua strategia complessiva.`
+      : `Pur nella stessa categoria, gli indici sottostanti differiscono in modo significativo.`;
+  }
+  document.getElementById('insight').innerHTML = `<strong>${nA}</strong> e <strong>${nB}</strong> mostrano ${msg}. ${advice}`;
+}
+
+function update() {
+  const a = document.getElementById('sel-a').value;
+  const b = document.getElementById('sel-b').value;
+  document.getElementById('th-a').textContent = a;
+  document.getElementById('th-b').textContent = b;
+  const data = computeOverlap(a, b);
+  lastData = {a, b, data};
+  document.getElementById('m-score').textContent = data.overlapScore.toFixed(0)+'%';
+  document.getElementById('m-count').textContent = data.shared.length;
+  document.getElementById('m-weight').textContent = data.overlapPct.toFixed(1)+'%';
+  drawVenn(data.overlapScore, a, b);
+  renderTable(a, b, data);
+  buildInsight(a, b, data);
+}
+
+populateSelects();
+update();
+</script>
+</body>
+</html>
